@@ -1,0 +1,29 @@
+{
+	"version": 0,
+	"dependencies": [
+		{
+			"importpath": "github.com/jroimartin/gocui",
+			"repository": "https://github.com/jroimartin/gocui",
+			"vcs": "git",
+			"revision": "612b0b2987ec1a6af46d7008cef1efd4b3898346",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/mattn/go-runewidth",
+			"repository": "https://github.com/mattn/go-runewidth",
+			"vcs": "git",
+			"revision": "14207d285c6c197daabb5c9793d63e7af9ab2d50",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/nsf/termbox-go",
+			"repository": "https://github.com/nsf/termbox-go",
+			"vcs": "git",
+			"revision": "7994c181db7761ca3c67a217068cf31826113f5f",
+			"branch": "master",
+			"notests": true
+		}
+	]
+}
