@@ -4,6 +4,9 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/jroimartin/gocui"
+	"github.com/nextmetaphor/gwAPI/controller"
+	"github.com/nextmetaphor/gwAPI/schema"
+	"net/http"
 )
 
 const logo = "" +
@@ -11,9 +14,9 @@ const logo = "" +
 	" \x1b[36m│ ┬│││\x1b[37m╠═╣╠═╝║ \n" +
 	" \x1b[36m└─┘└┴┘\x1b[37m╩ ╩╩  ╩ "
 
-//struct connection = {
-//
-//}
+var connection = controller.Connection{
+	DashboardURL: "",
+	AuthToken:    ""}
 
 func layout(g *gocui.Gui) error {
 	maxX, _ := g.Size()
@@ -52,6 +55,19 @@ func layout(g *gocui.Gui) error {
 		fmt.Fprintln(v, "APIs")
 		fmt.Fprintln(v, "Policies")
 		fmt.Fprintln(v, "Keys")
+
+	}
+
+	if v, err := g.SetView("apis", 19, 6, 200, 12); err != nil {
+		if err != gocui.ErrUnknownView {
+			return err
+		}
+
+		v.Frame = true
+		v.Title = "APIs"
+		v.Highlight = true
+		v.SelBgColor = gocui.ColorGreen
+		v.SelFgColor = gocui.ColorBlack
 
 	}
 
@@ -106,7 +122,8 @@ func login(gui *gocui.Gui, view *gocui.View) error {
 			return err
 		}
 	}
-	return nil}
+	return nil
+}
 
 func cancelAuthenticationView(gui *gocui.Gui, view *gocui.View) error {
 	err := gui.DeleteView("login")
@@ -118,8 +135,39 @@ func cancelAuthenticationView(gui *gocui.Gui, view *gocui.View) error {
 
 func attemptLogin(gui *gocui.Gui, view *gocui.View) error {
 	err := gui.DeleteView("login")
-	gui.SetCurrentView("side")
 
+	req, reqErr := connection.NewRequest(http.MethodGet, "/api/apis", nil)
+	if reqErr != nil {
+		log.Fatal(reqErr)
+		return reqErr
+	}
+	apis := new(schema.MultipleAPIDefinition)
+	connection.DoHttpRequest(req, apis)
+
+	apiView, apiViewErr := gui.View("apis")
+
+
+	if apiViewErr != nil {
+		log.Fatal(apiViewErr)
+		return apiViewErr
+	}
+
+	const OUTPUT_FORMAT = "%-32.32s  %-24.24s  %-32.32s  %-24.24s  %-32.32s  %-100.100s\n"
+	fmt.Fprintf(apiView, OUTPUT_FORMAT, "\x1b[36mname", "id", "api-id", "org-id", "listen-path", "target-url")
+	for _, api := range apis.APIs {
+		fmt.Fprintf(
+			apiView,
+			OUTPUT_FORMAT,
+			"\x1b[37m" + api.APIDefinition.Name,
+			api.APIDefinition.ID,
+			api.APIDefinition.APIID,
+			api.APIDefinition.OrgID,
+			api.APIDefinition.Proxy.ListenPath,
+			api.APIDefinition.Proxy.TargetURL,
+		)
+	}
+
+	gui.SetCurrentView("apis")
 	return err
 }
 
@@ -156,6 +204,14 @@ func keybindings(g *gocui.Gui) error {
 		return err
 	}
 
+	if err := g.SetKeybinding("apis", gocui.KeyArrowDown, gocui.ModNone, cursorDown); err != nil {
+		return err
+	}
+	if err := g.SetKeybinding("apis", gocui.KeyArrowUp, gocui.ModNone, cursorUp); err != nil {
+		return err
+	}
+
+
 	//	if err := g.SetKeybinding("side", gocui.KeyEnter, gocui.ModNone, getLine); err != nil {
 	//		return err
 	//	}
@@ -176,7 +232,7 @@ func main() {
 	gui, guiError := gocui.NewGui(gocui.Output256)
 	if guiError != nil {
 		log.WithFields(log.Fields{
-			"error": guiError}).Error("Error creating gui.")
+			"error": guiError}).Debug("Error creating gui.")
 		return
 	}
 	defer gui.Close()
@@ -191,8 +247,8 @@ func main() {
 		log.Panicln(err)
 	}
 
+
 	if err := gui.MainLoop(); err != nil && err != gocui.ErrQuit {
 		log.Panicln(err)
 	}
-
 }
