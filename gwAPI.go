@@ -7,6 +7,8 @@ import (
 	"github.com/nextmetaphor/gwAPI/controller"
 	"github.com/nextmetaphor/gwAPI/schema"
 	"net/http"
+	"strconv"
+	"os"
 )
 
 const logo = "" +
@@ -83,6 +85,7 @@ func quit(g *gocui.Gui, v *gocui.View) error {
 func cursorDown(g *gocui.Gui, v *gocui.View) error {
 	if v != nil {
 		cx, cy := v.Cursor()
+
 		if err := v.SetCursor(cx, cy+1); err != nil {
 			ox, oy := v.Origin()
 			if err := v.SetOrigin(ox, oy+1); err != nil {
@@ -97,6 +100,16 @@ func cursorUp(g *gocui.Gui, v *gocui.View) error {
 	if v != nil {
 		ox, oy := v.Origin()
 		cx, cy := v.Cursor()
+
+		log.Debug("HERE", oy, cy)
+		if (oy == 0) && (cy == 1) {
+			return nil
+		} else if (oy == 1) && (cy ==1) {
+			if err := v.SetOrigin(ox, oy-1); err != nil {
+				return err
+			}
+
+		}
 		if err := v.SetCursor(cx, cy-1); err != nil && oy > 0 {
 			if err := v.SetOrigin(ox, oy-1); err != nil {
 				return err
@@ -152,13 +165,14 @@ func attemptLogin(gui *gocui.Gui, view *gocui.View) error {
 		return apiViewErr
 	}
 
-	const OUTPUT_FORMAT = "%-32.32s  %-24.24s  %-32.32s  %-24.24s  %-32.32s  %-100.100s\n"
-	fmt.Fprintf(apiView, OUTPUT_FORMAT, "\x1b[36mname", "id", "api-id", "org-id", "listen-path", "target-url")
-	for _, api := range apis.APIs {
+	const OUTPUT_FORMAT = "%-6.6s  %-32.32s  %-24.24s  %-32.32s  %-24.24s  %-32.32s  %-100.100s\n"
+	fmt.Fprintf(apiView, OUTPUT_FORMAT, "\x1b[36m", "NAME", "ID", "API-ID", "ORG-ID", "LISTEN-PATH", "TARGET-URL")
+	for index, api := range apis.APIs {
 		fmt.Fprintf(
 			apiView,
 			OUTPUT_FORMAT,
-			"\x1b[37m" + api.APIDefinition.Name,
+			"\x1b[37m" + strconv.Itoa(index + 1),
+			api.APIDefinition.Name,
 			api.APIDefinition.ID,
 			api.APIDefinition.APIID,
 			api.APIDefinition.OrgID,
@@ -229,6 +243,14 @@ func keybindings(g *gocui.Gui) error {
 }
 
 func main() {
+	f, err := os.OpenFile("gwAPI.log", os.O_WRONLY | os.O_CREATE, 0755)
+	if err != nil {
+		panic(err)
+	}
+	log.SetOutput(f)
+	log.SetLevel(log.DebugLevel)
+	defer f.Close()
+
 	gui, guiError := gocui.NewGui(gocui.Output256)
 	if guiError != nil {
 		log.WithFields(log.Fields{
