@@ -1,0 +1,35 @@
+version: '2'
+
+services:
+    tyk_redis:
+        image: redis:latest
+        hostname: redis
+        ports:
+            - "6379:6379"
+        networks:
+            gateway:
+                aliases:
+                    - redis
+
+    tyk_gateway:
+        image: tykio/tyk-gateway:latest
+        ports:
+            - "80:8080"
+            - "8080:8080"
+        volumes:
+            - ./tyk.conf:/opt/tyk-gateway/tyk.conf
+        networks:
+            - gateway
+
+    keycloak:
+        image: jboss/keycloak
+        ports:
+            - 38080:8080
+        networks:
+            - gateway
+        environment:
+            - KEYCLOAK_USER=admin
+            - KEYCLOAK_PASSWORD=admin123
+
+networks:
+    gateway:
