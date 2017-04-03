@@ -31,5 +31,20 @@ services:
             - KEYCLOAK_USER=admin
             - KEYCLOAK_PASSWORD=admin123
 
+    graphite:
+        image: hopsoft/graphite-statsd
+        hostname: graphite
+        ports:
+            - 8081:80
+            - 2003:2003
+            - 2004:2004
+            - 2023:2023
+            - 2024:2024
+            - 8125:8125/udp
+            - 8126:8126
+        networks:
+            - gateway
+
+
 networks:
     gateway:

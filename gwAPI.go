@@ -5,10 +5,12 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/jroimartin/gocui"
 	"github.com/nextmetaphor/gwAPI/controller"
-	"github.com/nextmetaphor/gwAPI/schema"
+	//"github.com/nextmetaphor/gwAPI/schema"
 	"net/http"
 	"strconv"
 	"os"
+	"github.com/TykTechnologies/tykcommon"
+	"github.com/TykTechnologies/tyk"
 )
 
 const logo = "" +
@@ -17,8 +19,8 @@ const logo = "" +
 	" \x1b[36m└─┘└┴┘\x1b[37m╩ ╩╩  ╩ "
 
 var connection = controller.Connection{
-	DashboardURL: "",
-	AuthToken:    ""}
+	DashboardURL: "http://localhost:8080",
+	AuthToken:    "ThisInNotTheSecretYouAreLookingFor"}
 
 func layout(g *gocui.Gui) error {
 	maxX, _ := g.Size()
@@ -72,6 +74,20 @@ func layout(g *gocui.Gui) error {
 		v.SelFgColor = gocui.ColorBlack
 
 	}
+
+	if v, err := g.SetView("nodes", 19, 30, 100, 42); err != nil {
+		if err != gocui.ErrUnknownView {
+			return err
+		}
+
+		v.Frame = true
+		v.Title = "nodes"
+		v.Highlight = true
+		v.SelBgColor = gocui.ColorGreen
+		v.SelFgColor = gocui.ColorBlack
+
+	}
+
 
 	log.Debug(maxX)
 
@@ -146,15 +162,22 @@ func cancelAuthenticationView(gui *gocui.Gui, view *gocui.View) error {
 
 }
 
+func showNodes(gui *gocui.Gui, view *gocui.View) error {
+	nodeHealth := new(tykcommon.)
+}
+
 func attemptLogin(gui *gocui.Gui, view *gocui.View) error {
 	err := gui.DeleteView("login")
 
-	req, reqErr := connection.NewRequest(http.MethodGet, "/api/apis", nil)
+	req, reqErr := connection.NewRequest(http.MethodGet, "/tyk/apis/", nil)
 	if reqErr != nil {
 		log.Fatal(reqErr)
 		return reqErr
 	}
-	apis := new(schema.MultipleAPIDefinition)
+
+	//apis := new(schema.MultipleAPIDefinition)
+	apis := new([]struct {tykcommon.APIDefinition})
+
 	connection.DoHttpRequest(req, apis)
 
 	apiView, apiViewErr := gui.View("apis")
@@ -167,17 +190,18 @@ func attemptLogin(gui *gocui.Gui, view *gocui.View) error {
 
 	const OUTPUT_FORMAT = "%-6.6s  %-32.32s  %-24.24s  %-32.32s  %-24.24s  %-32.32s  %-100.100s\n"
 	fmt.Fprintf(apiView, OUTPUT_FORMAT, "\x1b[36m", "NAME", "ID", "API-ID", "ORG-ID", "LISTEN-PATH", "TARGET-URL")
-	for index, api := range apis.APIs {
+
+	for index, api := range *apis {
 		fmt.Fprintf(
 			apiView,
 			OUTPUT_FORMAT,
 			"\x1b[37m" + strconv.Itoa(index + 1),
-			api.APIDefinition.Name,
-			api.APIDefinition.ID,
-			api.APIDefinition.APIID,
-			api.APIDefinition.OrgID,
-			api.APIDefinition.Proxy.ListenPath,
-			api.APIDefinition.Proxy.TargetURL,
+			api.Name,
+			"0",
+			api.APIID,
+			api.OrgID,
+			api.Proxy.ListenPath,
+			api.Proxy.TargetURL,
 		)
 	}
 

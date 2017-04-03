@@ -1,0 +1,29 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: tyk-gateway
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: tyk-gateway
+    spec:
+      containers:
+      - image: tykio/tyk-gateway:v2.3.3
+        imagePullPolicy: Always
+        name: tyk-gateway
+        command: ["/opt/tyk-gateway/tyk", "--conf=/etc/tyk-gateway/tyk.conf"]
+        workingDir: /opt/tyk-gateway
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+          - name: tyk-gateway-conf
+            mountPath: /etc/tyk-gateway
+      volumes:
+        - name: tyk-gateway-conf
+          configMap:
+            name: tyk-gateway-conf
+            items:
+              - key: tyk.conf
+                path: tyk.conf

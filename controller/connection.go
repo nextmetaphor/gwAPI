@@ -16,7 +16,7 @@ type Connection struct {
 
 func (con Connection) NewRequest(method string, urlStr string, body io.Reader) (*http.Request, error) {
 	req, reqErr := http.NewRequest(method, con.DashboardURL+urlStr, body)
-	req.Header.Add("Authorization", con.AuthToken)
+	req.Header.Add("x-tyk-authorization", con.AuthToken)
 	return req, reqErr
 }
 
