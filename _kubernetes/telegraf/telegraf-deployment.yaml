@@ -1,0 +1,27 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: telegraf
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: telegraf
+    spec:
+      containers:
+      - image: telegraf:latest
+        imagePullPolicy: Always
+        name: telegraf-db
+        ports:
+        - containerPort: 8125
+        volumeMounts:
+          - name: telegraf-conf
+            mountPath: /etc/telegraf/
+      volumes:
+        - name: telegraf-conf
+          configMap:
+            name: telegraf-conf
+            items:
+              - key: telegraf.conf
+                path: telegraf.conf

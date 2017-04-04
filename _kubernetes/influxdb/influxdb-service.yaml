@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: influxdb
+spec:
+  ports:
+  - port: 8086
+    name: non-admin-port
+    targetPort: 8086
+    nodePort: 30100
+    protocol: TCP
+  - port: 8083
+    name: admin-port
+    targetPort: 8083
+    nodePort: 30101
+    protocol: TCP
+  selector:
+    app: influxdb
+  type: LoadBalancer

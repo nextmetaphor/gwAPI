@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: telegraf
+spec:
+  ports:
+  - port: 8125
+    name: statsd
+    targetPort: 8125
+    protocol: TCP
+  - port: 8092
+    name: UDP
+    targetPort: 8092
+    protocol: UDP
+  - port: 8094
+    name: TCP
+    targetPort: 8094
+    protocol: 8094
+  selector:
+    app: telegraf
+  type: LoadBalancer

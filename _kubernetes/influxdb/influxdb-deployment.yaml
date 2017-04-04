@@ -1,0 +1,28 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: influxdb
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: influxdb
+    spec:
+      containers:
+      - image: influxdb:latest
+        imagePullPolicy: Always
+        name: influx-db
+        ports:
+        - containerPort: 8083
+        - containerPort: 8086
+        volumeMounts:
+          - name: influxdb-conf
+            mountPath: /etc/influxdb
+      volumes:
+        - name: influxdb-conf
+          configMap:
+            name: influxdb-conf
+            items:
+              - key: influxdb.conf
+                path: influxdb.conf
