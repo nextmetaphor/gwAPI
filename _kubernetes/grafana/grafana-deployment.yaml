@@ -1,0 +1,20 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: grafana
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+      - image: grafana/grafana:latest
+        imagePullPolicy: Always
+        name: grafana
+        ports:
+        - containerPort: 3000
+        env:
+        - name: INFLUXDB_HOST
+          value: influxdb

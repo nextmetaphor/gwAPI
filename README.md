@@ -16,12 +16,19 @@ eval $(minikube docker-env)
 kubectl create configmap influxdb-conf --from-file=_kubernetes/influxdb/influxdb.conf
 kubectl create -f _kubernetes/influxdb/influxdb-deployment.yaml
 kubectl create -f _kubernetes/influxdb/influxdb-service.yaml
+# minikube only
+open http://`minikube ip`:30101
 
 # telegraf
 kubectl create configmap telegraf-conf --from-file=_kubernetes/telegraf/telegraf.conf
 kubectl create -f _kubernetes/telegraf/telegraf-deployment.yaml
 kubectl create -f _kubernetes/telegraf/telegraf-service.yaml
 
+# grafana
+kubectl create -f _kubernetes/grafana/grafana-deployment.yaml
+kubectl create -f _kubernetes/grafana/grafana-service.yaml
+# minikube only
+open http://`minikube ip`:30102
 
 # redis
 kubectl create -f _kubernetes/redis/redis-deployment.yaml
