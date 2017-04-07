@@ -36,8 +36,16 @@ kubectl create -f _kubernetes/redis/redis-service.yaml
 
 # gateway
 kubectl create configmap tyk-gateway-conf --from-file=_kubernetes/gateway/tyk.conf
+kubectl create configmap tyk-gateway-apps --from-file=_kubernetes/gateway/apps/1.json
 kubectl create -f _kubernetes/gateway/tyk-gateway-deployment.yaml
 kubectl create -f _kubernetes/gateway/tyk-gateway-service.yaml
+
+curl --header "x-tyk-authorization: ThisInNotTheSecretYouAreLookingFor" http://`minikube ip`:30002/tyk-api-test/get
+
+# pump
+kubectl create configmap tyk-pump-conf --from-file=_kubernetes/pump/pump.conf
+kubectl create -f _kubernetes/pump/tyk-pump-deployment.yaml
+
 ```
 
 #### docker-compose

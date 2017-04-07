@@ -16,4 +16,4 @@ spec:
     protocol: TCP
   selector:
     app: influxdb
-  type: LoadBalancer
+  type: NodePort

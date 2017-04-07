@@ -10,4 +10,4 @@ spec:
     protocol: UDP
   selector:
     app: telegraf
-  type: LoadBalancer
+  type: NodePort

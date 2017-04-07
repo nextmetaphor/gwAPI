@@ -1,0 +1,30 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: tyk-pump
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: tyk-pump
+    spec:
+      containers:
+      - image: tykio/tyk-pump-docker-pub:v0.4.2
+        imagePullPolicy: Always
+        name: tyk-pump
+        command: ["/opt/tyk-pump/tyk-pump", "--c=/etc/tyk-pump/pump.conf"]
+        env:
+        - name: TYK_LOGLEVEL
+          value: debug
+        workingDir: /opt/tyk-pump
+        volumeMounts:
+          - name: tyk-pump-conf
+            mountPath: /etc/tyk-pump
+      volumes:
+        - name: tyk-pump-conf
+          configMap:
+            name: tyk-pump-conf
+            items:
+              - key: pump.conf
+                path: pump.conf

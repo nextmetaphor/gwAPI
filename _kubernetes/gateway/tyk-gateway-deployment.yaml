@@ -20,6 +20,8 @@ spec:
         volumeMounts:
           - name: tyk-gateway-conf
             mountPath: /etc/tyk-gateway
+          - name: tyk-gateway-apps
+            mountPath: /opt/tyk-gateway/apps
       volumes:
         - name: tyk-gateway-conf
           configMap:
@@ -27,3 +29,9 @@ spec:
             items:
               - key: tyk.conf
                 path: tyk.conf
+        - name: tyk-gateway-apps
+          configMap:
+            name: tyk-gateway-apps
+            items:
+              - key: 1.json
+                path: 1.json
