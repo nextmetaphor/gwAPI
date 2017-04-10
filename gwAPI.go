@@ -10,16 +10,21 @@ import (
 	"strconv"
 	"os"
 	"github.com/TykTechnologies/tykcommon"
-	"github.com/TykTechnologies/tyk"
+	//"github.com/TykTechnologies/tyk"
+	"gopkg.in/square/go-jose.v1/json"
 )
 
-const logo = "" +
+const (
+	logo = "" +
 	" \x1b[36m┌─┐┬ ┬\x1b[37m╔═╗╔═╗╦ \n" +
 	" \x1b[36m│ ┬│││\x1b[37m╠═╣╠═╝║ \n" +
 	" \x1b[36m└─┘└┴┘\x1b[37m╩ ╩╩  ╩ "
 
+	API_DETAIL_VIEW = "apiDetails"
+)
+
 var connection = controller.Connection{
-	DashboardURL: "http://localhost:8080",
+	DashboardURL: "http://192.168.64.8:30002",
 	AuthToken:    "ThisInNotTheSecretYouAreLookingFor"}
 
 func layout(g *gocui.Gui) error {
@@ -162,8 +167,58 @@ func cancelAuthenticationView(gui *gocui.Gui, view *gocui.View) error {
 
 }
 
-func showNodes(gui *gocui.Gui, view *gocui.View) error {
-	nodeHealth := new(tykcommon.)
+func selectAPI(gui *gocui.Gui, view *gocui.View) error {
+	_, cy := view.Cursor()
+	//var line string
+	var err error
+	if _, err = view.Line(cy); err != nil {
+		//TODO
+		return err
+	}
+	maxX, maxY := gui.Size()
+	if v, err := gui.SetView(API_DETAIL_VIEW, 10, 10, maxX-10, maxY-10); err != nil {
+		if err != gocui.ErrUnknownView {
+			return err
+		}
+
+		v.Editable = false
+		v.Title = "API Definition"
+		v.Autoscroll = false
+		v.Wrap = true
+
+		api, loadAPIErr := loadAPI("1")
+		if loadAPIErr != nil {
+			panic(loadAPIErr)
+		}
+		jsonAPI, marshallErr := json.MarshalIndent(api, "", "  ")
+		if marshallErr != nil {
+			panic(marshallErr)
+		}
+
+		fmt.Fprintln(v, string(jsonAPI))
+		if _, err := gui.SetCurrentView(API_DETAIL_VIEW); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+//func showNodes(gui *gocui.Gui, view *gocui.View) error {
+	//nodeHealth := new(tykcommon.)
+//}
+
+func loadAPI(apiId string) (tykcommon.APIDefinition, error) {
+
+	req, reqErr := connection.NewRequest(http.MethodGet, "/tyk/apis/" + apiId, nil);
+	if reqErr != nil {
+		panic(reqErr)
+	}
+
+	api := new(tykcommon.APIDefinition)
+	connection.DoHttpRequest(req, api)
+
+	return *api, nil
 }
 
 func attemptLogin(gui *gocui.Gui, view *gocui.View) error {
@@ -209,6 +264,14 @@ func attemptLogin(gui *gocui.Gui, view *gocui.View) error {
 	return err
 }
 
+func cancelEditAPI(gui *gocui.Gui, view *gocui.View) error {
+	err := gui.DeleteView(API_DETAIL_VIEW)
+	gui.SetCurrentView("apis")
+
+	return err
+}
+
+
 func keybindings(g *gocui.Gui) error {
 	if err := g.SetKeybinding("", 'c', gocui.ModNone, quit); err != nil {
 		return err
@@ -248,7 +311,13 @@ func keybindings(g *gocui.Gui) error {
 	if err := g.SetKeybinding("apis", gocui.KeyArrowUp, gocui.ModNone, cursorUp); err != nil {
 		return err
 	}
+	if err := g.SetKeybinding("apis", gocui.KeyEnter, gocui.ModNone, selectAPI); err != nil {
+		return err
+	}
 
+	if err := g.SetKeybinding(API_DETAIL_VIEW, gocui.KeyEsc, gocui.ModNone, cancelEditAPI); err != nil {
+		return err
+	}
 
 	//	if err := g.SetKeybinding("side", gocui.KeyEnter, gocui.ModNone, getLine); err != nil {
 	//		return err
