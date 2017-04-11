@@ -167,6 +167,31 @@ func cancelAuthenticationView(gui *gocui.Gui, view *gocui.View) error {
 
 }
 
+func saveAPI(gui *gocui.Gui, view *gocui.View) error {
+	view.Title = view.Title + " Saving API..."
+
+	updateResponse := new(tykcommon.APIDefinition)
+	bufferString := view.Buffer()
+	httpResponse, updateErr := connection.UpdateAPI("1", &bufferString, *updateResponse)
+
+	if updateErr != nil {
+		return updateErr
+	}
+
+	if httpResponse.StatusCode == http.StatusOK {
+		view.Title = view.Title + "API Saved. Reloading definitions..."
+		req, reqErr := connection.NewRequest(http.MethodGet, "/tyk/reload/group", nil)
+		if reqErr != nil {
+			panic(reqErr)
+		}
+		var response interface{}
+		connection.DoHttpRequest(req, response)
+		view.Title = view.Title + "Definitions reloaded"
+	}
+
+	return nil
+}
+
 func selectAPI(gui *gocui.Gui, view *gocui.View) error {
 	_, cy := view.Cursor()
 	//var line string
@@ -181,7 +206,7 @@ func selectAPI(gui *gocui.Gui, view *gocui.View) error {
 			return err
 		}
 
-		v.Editable = false
+		v.Editable = true
 		v.Title = "API Definition"
 		v.Autoscroll = false
 		v.Wrap = true
@@ -196,6 +221,7 @@ func selectAPI(gui *gocui.Gui, view *gocui.View) error {
 		}
 
 		fmt.Fprintln(v, string(jsonAPI))
+
 		if _, err := gui.SetCurrentView(API_DETAIL_VIEW); err != nil {
 			return err
 		}
@@ -319,6 +345,11 @@ func keybindings(g *gocui.Gui) error {
 		return err
 	}
 
+	if err := g.SetKeybinding(API_DETAIL_VIEW, gocui.KeyCtrlS, gocui.ModNone, saveAPI); err != nil {
+		return err
+	}
+
+
 	//	if err := g.SetKeybinding("side", gocui.KeyEnter, gocui.ModNone, getLine); err != nil {
 	//		return err
 	//	}
@@ -345,6 +376,7 @@ func main() {
 	defer f.Close()
 
 	gui, guiError := gocui.NewGui(gocui.Output256)
+	gui.InputEsc = true
 	if guiError != nil {
 		log.WithFields(log.Fields{
 			"error": guiError}).Debug("Error creating gui.")
