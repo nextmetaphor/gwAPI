@@ -23,9 +23,11 @@ const (
 	API_DETAIL_VIEW = "apiDetails"
 )
 
-var connection = controller.Connection{
-	DashboardURL: "http://192.168.64.8:30002",
+var connection = controller.ConnectionCredentials{
+	GatewayURL: "http://192.168.64.8:30002",
 	AuthToken:    "ThisInNotTheSecretYouAreLookingFor"}
+
+var connector = controller.Connection{}
 
 func layout(g *gocui.Gui) error {
 	maxX, _ := g.Size()
@@ -172,7 +174,7 @@ func saveAPI(gui *gocui.Gui, view *gocui.View) error {
 
 	updateResponse := new(tykcommon.APIDefinition)
 	bufferString := view.Buffer()
-	httpResponse, updateErr := connection.UpdateAPI("1", &bufferString, *updateResponse)
+	httpResponse, updateErr := controller.UpdateAPI(connection, connector, "1", &bufferString, *updateResponse)
 
 	if updateErr != nil {
 		return updateErr
@@ -180,12 +182,12 @@ func saveAPI(gui *gocui.Gui, view *gocui.View) error {
 
 	if httpResponse.StatusCode == http.StatusOK {
 		view.Title = view.Title + "API Saved. Reloading definitions..."
-		req, reqErr := connection.NewRequest(http.MethodGet, "/tyk/reload/group", nil)
+		req, reqErr := connector.NewRequest(connection, http.MethodGet, "/tyk/reload/group", nil)
 		if reqErr != nil {
 			panic(reqErr)
 		}
 		var response interface{}
-		connection.DoHttpRequest(req, response)
+		connector.DoHttpRequest(req, response)
 		view.Title = view.Title + "Definitions reloaded"
 	}
 
@@ -236,13 +238,13 @@ func selectAPI(gui *gocui.Gui, view *gocui.View) error {
 
 func loadAPI(apiId string) (tykcommon.APIDefinition, error) {
 
-	req, reqErr := connection.NewRequest(http.MethodGet, "/tyk/apis/" + apiId, nil);
+	req, reqErr := connector.NewRequest(connection, http.MethodGet, "/tyk/apis/" + apiId, nil);
 	if reqErr != nil {
 		panic(reqErr)
 	}
 
 	api := new(tykcommon.APIDefinition)
-	connection.DoHttpRequest(req, api)
+	connector.DoHttpRequest(req, api)
 
 	return *api, nil
 }
@@ -250,7 +252,7 @@ func loadAPI(apiId string) (tykcommon.APIDefinition, error) {
 func attemptLogin(gui *gocui.Gui, view *gocui.View) error {
 	err := gui.DeleteView("login")
 
-	req, reqErr := connection.NewRequest(http.MethodGet, "/tyk/apis/", nil)
+	req, reqErr := connector.NewRequest(connection, http.MethodGet, "/tyk/apis/", nil)
 	if reqErr != nil {
 		log.Fatal(reqErr)
 		return reqErr
@@ -259,7 +261,7 @@ func attemptLogin(gui *gocui.Gui, view *gocui.View) error {
 	//apis := new(schema.MultipleAPIDefinition)
 	apis := new([]struct {tykcommon.APIDefinition})
 
-	connection.DoHttpRequest(req, apis)
+	connector.DoHttpRequest(req, apis)
 
 	apiView, apiViewErr := gui.View("apis")
 

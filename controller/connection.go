@@ -9,14 +9,22 @@ import (
 	"net/http"
 )
 
-type Connection struct {
-	DashboardURL string
-	AuthToken    string
+type Connector interface {
+	NewRequest(credentials ConnectionCredentials, method string, urlStr string, body io.Reader) (*http.Request, error)
+	DoHttpRequest(req *http.Request, responseObject interface{}) http.Response
 }
 
-func (con Connection) NewRequest(method string, urlStr string, body io.Reader) (*http.Request, error) {
-	req, reqErr := http.NewRequest(method, con.DashboardURL + urlStr, body)
-	req.Header.Add("x-tyk-authorization", con.AuthToken)
+type ConnectionCredentials struct {
+	GatewayURL string
+	AuthToken  string
+}
+
+type Connection struct {
+}
+
+func (con Connection) NewRequest(credentials ConnectionCredentials, method string, urlStr string, body io.Reader) (*http.Request, error) {
+	req, reqErr := http.NewRequest(method, credentials.GatewayURL + urlStr, body)
+	req.Header.Add("x-tyk-authorization", credentials.AuthToken)
 	return req, reqErr
 }
 
