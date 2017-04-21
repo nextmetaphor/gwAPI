@@ -1,4 +1,4 @@
-package controller
+package connection
 
 import (
 	"crypto/tls"
@@ -20,6 +20,21 @@ type ConnectionCredentials struct {
 }
 
 type Connection struct {
+}
+
+func GenericRESTCall(credentials ConnectionCredentials, connector Connector, method, uri string, body io.Reader, responseDocument interface{}) (http.Response, error) {
+	var httpResponse http.Response
+	var reqError error
+
+	req, reqError := connector.NewRequest(credentials, method, uri, body)
+	if (reqError != nil) {
+		log.WithFields(log.Fields{
+			"error": reqError}).Debug("Error creating request")
+	} else {
+		httpResponse = connector.DoHttpRequest(req, responseDocument)
+	}
+
+	return httpResponse, reqError
 }
 
 func (con Connection) NewRequest(credentials ConnectionCredentials, method string, urlStr string, body io.Reader) (*http.Request, error) {

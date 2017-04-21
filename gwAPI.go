@@ -12,6 +12,7 @@ import (
 	"github.com/TykTechnologies/tykcommon"
 	//"github.com/TykTechnologies/tyk"
 	"gopkg.in/square/go-jose.v1/json"
+	"github.com/nextmetaphor/gwAPI/connection"
 )
 
 const (
@@ -23,11 +24,11 @@ const (
 	API_DETAIL_VIEW = "apiDetails"
 )
 
-var connection = controller.ConnectionCredentials{
+var credentials = connection.ConnectionCredentials{
 	GatewayURL: "http://192.168.64.8:30002",
 	AuthToken:    "ThisInNotTheSecretYouAreLookingFor"}
 
-var connector = controller.Connection{}
+var connector = connection.Connection{}
 
 func layout(g *gocui.Gui) error {
 	maxX, _ := g.Size()
@@ -174,7 +175,7 @@ func saveAPI(gui *gocui.Gui, view *gocui.View) error {
 
 	updateResponse := new(tykcommon.APIDefinition)
 	bufferString := view.Buffer()
-	httpResponse, updateErr := controller.UpdateAPI(connection, connector, "1", &bufferString, *updateResponse)
+	httpResponse, updateErr := controller.UpdateAPI(credentials, connector, "1", &bufferString, *updateResponse)
 
 	if updateErr != nil {
 		return updateErr
@@ -182,7 +183,7 @@ func saveAPI(gui *gocui.Gui, view *gocui.View) error {
 
 	if httpResponse.StatusCode == http.StatusOK {
 		view.Title = view.Title + "API Saved. Reloading definitions..."
-		req, reqErr := connector.NewRequest(connection, http.MethodGet, "/tyk/reload/group", nil)
+		req, reqErr := connector.NewRequest(credentials, http.MethodGet, "/tyk/reload/group", nil)
 		if reqErr != nil {
 			panic(reqErr)
 		}
@@ -213,7 +214,7 @@ func selectAPI(gui *gocui.Gui, view *gocui.View) error {
 		v.Autoscroll = false
 		v.Wrap = true
 
-		api, loadAPIErr := loadAPI("1")
+		api, _, loadAPIErr := loadAPI("1")
 		if loadAPIErr != nil {
 			panic(loadAPIErr)
 		}
@@ -236,23 +237,18 @@ func selectAPI(gui *gocui.Gui, view *gocui.View) error {
 	//nodeHealth := new(tykcommon.)
 //}
 
-func loadAPI(apiId string) (tykcommon.APIDefinition, error) {
+func loadAPI(apiId string) (tykcommon.APIDefinition, http.Response, error) {
 
-	req, reqErr := connector.NewRequest(connection, http.MethodGet, "/tyk/apis/" + apiId, nil);
-	if reqErr != nil {
-		panic(reqErr)
-	}
+	apiDefinition := new(tykcommon.APIDefinition)
+	httpResponse, httpRequestError := controller.ReadAPI(credentials, connector, apiId, apiDefinition)
 
-	api := new(tykcommon.APIDefinition)
-	connector.DoHttpRequest(req, api)
-
-	return *api, nil
+	return *apiDefinition, httpResponse, httpRequestError
 }
 
 func attemptLogin(gui *gocui.Gui, view *gocui.View) error {
 	err := gui.DeleteView("login")
 
-	req, reqErr := connector.NewRequest(connection, http.MethodGet, "/tyk/apis/", nil)
+	req, reqErr := connector.NewRequest(credentials, http.MethodGet, "/tyk/apis/", nil)
 	if reqErr != nil {
 		log.Fatal(reqErr)
 		return reqErr
