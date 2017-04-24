@@ -173,9 +173,8 @@ func cancelAuthenticationView(gui *gocui.Gui, view *gocui.View) error {
 func saveAPI(gui *gocui.Gui, view *gocui.View) error {
 	view.Title = view.Title + " Saving API..."
 
-	updateResponse := new(tykcommon.APIDefinition)
 	bufferString := view.Buffer()
-	httpResponse, updateErr := controller.UpdateAPI(credentials, connector, "1", &bufferString, *updateResponse)
+	_, httpResponse, updateErr := controller.UpdateAPI(credentials, connector, "1", &bufferString)
 
 	if updateErr != nil {
 		return updateErr
@@ -183,12 +182,8 @@ func saveAPI(gui *gocui.Gui, view *gocui.View) error {
 
 	if httpResponse.StatusCode == http.StatusOK {
 		view.Title = view.Title + "API Saved. Reloading definitions..."
-		req, reqErr := connector.NewRequest(credentials, http.MethodGet, "/tyk/reload/group", nil)
-		if reqErr != nil {
-			panic(reqErr)
-		}
-		var response interface{}
-		connector.DoHttpRequest(req, response)
+		controller.ReloadGatewayGroup(credentials, connector)
+
 		view.Title = view.Title + "Definitions reloaded"
 	}
 
@@ -214,7 +209,7 @@ func selectAPI(gui *gocui.Gui, view *gocui.View) error {
 		v.Autoscroll = false
 		v.Wrap = true
 
-		api, _, loadAPIErr := loadAPI("1")
+		api, _, loadAPIErr := controller.ReadAPI(credentials, connector, "1")
 		if loadAPIErr != nil {
 			panic(loadAPIErr)
 		}
@@ -236,14 +231,6 @@ func selectAPI(gui *gocui.Gui, view *gocui.View) error {
 //func showNodes(gui *gocui.Gui, view *gocui.View) error {
 	//nodeHealth := new(tykcommon.)
 //}
-
-func loadAPI(apiId string) (tykcommon.APIDefinition, http.Response, error) {
-
-	apiDefinition := new(tykcommon.APIDefinition)
-	httpResponse, httpRequestError := controller.ReadAPI(credentials, connector, apiId, apiDefinition)
-
-	return *apiDefinition, httpResponse, httpRequestError
-}
 
 func attemptLogin(gui *gocui.Gui, view *gocui.View) error {
 	err := gui.DeleteView("login")
