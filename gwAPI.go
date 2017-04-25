@@ -5,12 +5,9 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/jroimartin/gocui"
 	"github.com/nextmetaphor/gwAPI/controller"
-	//"github.com/nextmetaphor/gwAPI/schema"
 	"net/http"
 	"strconv"
 	"os"
-	"github.com/TykTechnologies/tykcommon"
-	//"github.com/TykTechnologies/tyk"
 	"gopkg.in/square/go-jose.v1/json"
 	"github.com/nextmetaphor/gwAPI/connection"
 )
@@ -235,19 +232,8 @@ func selectAPI(gui *gocui.Gui, view *gocui.View) error {
 func attemptLogin(gui *gocui.Gui, view *gocui.View) error {
 	err := gui.DeleteView("login")
 
-	req, reqErr := connector.NewRequest(credentials, http.MethodGet, "/tyk/apis/", nil)
-	if reqErr != nil {
-		log.Fatal(reqErr)
-		return reqErr
-	}
-
-	//apis := new(schema.MultipleAPIDefinition)
-	apis := new([]struct {tykcommon.APIDefinition})
-
-	connector.DoHttpRequest(req, apis)
-
+	apis, _, _ := controller.SelectAPIs(credentials, connector)
 	apiView, apiViewErr := gui.View("apis")
-
 
 	if apiViewErr != nil {
 		log.Fatal(apiViewErr)
