@@ -4,26 +4,26 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/jroimartin/gocui"
-	"github.com/nextmetaphor/gwAPI/controller"
-	"net/http"
-	"strconv"
-	"os"
-	"gopkg.in/square/go-jose.v1/json"
 	"github.com/nextmetaphor/gwAPI/connection"
+	"github.com/nextmetaphor/gwAPI/controller"
+	"gopkg.in/square/go-jose.v1/json"
+	"net/http"
+	"os"
+	"strconv"
 )
 
 const (
 	logo = "" +
-	" \x1b[36m┌─┐┬ ┬\x1b[37m╔═╗╔═╗╦ \n" +
-	" \x1b[36m│ ┬│││\x1b[37m╠═╣╠═╝║ \n" +
-	" \x1b[36m└─┘└┴┘\x1b[37m╩ ╩╩  ╩ "
+		" \x1b[36m┌─┐┬ ┬\x1b[37m╔═╗╔═╗╦ \n" +
+		" \x1b[36m│ ┬│││\x1b[37m╠═╣╠═╝║ \n" +
+		" \x1b[36m└─┘└┴┘\x1b[37m╩ ╩╩  ╩ "
 
-	API_DETAIL_VIEW = "apiDetails"
+	apiDetailView = "apiDetails"
 )
 
 var credentials = connection.ConnectionCredentials{
 	GatewayURL: "http://192.168.64.8:30002",
-	AuthToken:    "ThisInNotTheSecretYouAreLookingFor"}
+	AuthToken:  "ThisInNotTheSecretYouAreLookingFor"}
 
 var connector = connection.Connection{}
 
@@ -93,7 +93,6 @@ func layout(g *gocui.Gui) error {
 
 	}
 
-
 	log.Debug(maxX)
 
 	return nil
@@ -123,9 +122,10 @@ func cursorUp(g *gocui.Gui, v *gocui.View) error {
 		cx, cy := v.Cursor()
 
 		log.Debug("HERE", oy, cy)
+		getKeys(g, "1")
 		if (oy == 0) && (cy == 1) {
 			return nil
-		} else if (oy == 1) && (cy ==1) {
+		} else if (oy == 1) && (cy == 1) {
 			if err := v.SetOrigin(ox, oy-1); err != nil {
 				return err
 			}
@@ -196,7 +196,7 @@ func selectAPI(gui *gocui.Gui, view *gocui.View) error {
 		return err
 	}
 	maxX, maxY := gui.Size()
-	if v, err := gui.SetView(API_DETAIL_VIEW, 10, 10, maxX-10, maxY-10); err != nil {
+	if v, err := gui.SetView(apiDetailView, 10, 10, maxX-10, maxY-10); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
@@ -217,7 +217,7 @@ func selectAPI(gui *gocui.Gui, view *gocui.View) error {
 
 		fmt.Fprintln(v, string(jsonAPI))
 
-		if _, err := gui.SetCurrentView(API_DETAIL_VIEW); err != nil {
+		if _, err := gui.SetCurrentView(apiDetailView); err != nil {
 			return err
 		}
 	}
@@ -226,8 +226,18 @@ func selectAPI(gui *gocui.Gui, view *gocui.View) error {
 }
 
 //func showNodes(gui *gocui.Gui, view *gocui.View) error {
-	//nodeHealth := new(tykcommon.)
+//nodeHealth := new(tykcommon.)
 //}
+
+func getKeys(gui *gocui.Gui, apiID string) {
+	controller.SelectKeys(credentials, connector, apiID)
+
+	keyView, _ := gui.View("nodes")
+
+	const outputFormat = "%-6.6s  %-32.32s  %-24.24s  %-32.32s  %-24.24s  %-32.32s  %-100.100s\n"
+	fmt.Fprintf(keyView, outputFormat, "\x1b[36m", "NAME", "ID", "API-ID", "ORG-ID", "LISTEN-PATH", "TARGET-URL")
+
+}
 
 func attemptLogin(gui *gocui.Gui, view *gocui.View) error {
 	err := gui.DeleteView("login")
@@ -240,14 +250,14 @@ func attemptLogin(gui *gocui.Gui, view *gocui.View) error {
 		return apiViewErr
 	}
 
-	const OUTPUT_FORMAT = "%-6.6s  %-32.32s  %-24.24s  %-32.32s  %-24.24s  %-32.32s  %-100.100s\n"
-	fmt.Fprintf(apiView, OUTPUT_FORMAT, "\x1b[36m", "NAME", "ID", "API-ID", "ORG-ID", "LISTEN-PATH", "TARGET-URL")
+	const outputFormat = "%-6.6s  %-32.32s  %-24.24s  %-32.32s  %-24.24s  %-32.32s  %-100.100s\n"
+	fmt.Fprintf(apiView, outputFormat, "\x1b[36m", "NAME", "ID", "API-ID", "ORG-ID", "LISTEN-PATH", "TARGET-URL")
 
 	for index, api := range *apis {
 		fmt.Fprintf(
 			apiView,
-			OUTPUT_FORMAT,
-			"\x1b[37m" + strconv.Itoa(index + 1),
+			outputFormat,
+			"\x1b[37m"+strconv.Itoa(index+1),
 			api.Name,
 			"0",
 			api.APIID,
@@ -262,12 +272,11 @@ func attemptLogin(gui *gocui.Gui, view *gocui.View) error {
 }
 
 func cancelEditAPI(gui *gocui.Gui, view *gocui.View) error {
-	err := gui.DeleteView(API_DETAIL_VIEW)
+	err := gui.DeleteView(apiDetailView)
 	gui.SetCurrentView("apis")
 
 	return err
 }
-
 
 func keybindings(g *gocui.Gui) error {
 	if err := g.SetKeybinding("", 'c', gocui.ModNone, quit); err != nil {
@@ -312,14 +321,13 @@ func keybindings(g *gocui.Gui) error {
 		return err
 	}
 
-	if err := g.SetKeybinding(API_DETAIL_VIEW, gocui.KeyEsc, gocui.ModNone, cancelEditAPI); err != nil {
+	if err := g.SetKeybinding(apiDetailView, gocui.KeyEsc, gocui.ModNone, cancelEditAPI); err != nil {
 		return err
 	}
 
-	if err := g.SetKeybinding(API_DETAIL_VIEW, gocui.KeyCtrlS, gocui.ModNone, saveAPI); err != nil {
+	if err := g.SetKeybinding(apiDetailView, gocui.KeyCtrlS, gocui.ModNone, saveAPI); err != nil {
 		return err
 	}
-
 
 	//	if err := g.SetKeybinding("side", gocui.KeyEnter, gocui.ModNone, getLine); err != nil {
 	//		return err
@@ -338,7 +346,7 @@ func keybindings(g *gocui.Gui) error {
 }
 
 func main() {
-	f, err := os.OpenFile("gwAPI.log", os.O_WRONLY | os.O_CREATE, 0755)
+	f, err := os.OpenFile("gwAPI.log", os.O_WRONLY|os.O_CREATE, 0755)
 	if err != nil {
 		panic(err)
 	}
@@ -364,7 +372,6 @@ func main() {
 	if err := keybindings(gui); err != nil {
 		log.Panicln(err)
 	}
-
 
 	if err := gui.MainLoop(); err != nil && err != gocui.ErrQuit {
 		log.Panicln(err)
