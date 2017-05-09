@@ -86,7 +86,7 @@ func layout(g *gocui.Gui) error {
 		}
 
 		v.Frame = true
-		v.Title = "nodes"
+		v.Title = "keys"
 		v.Highlight = true
 		v.SelBgColor = gocui.ColorGreen
 		v.SelFgColor = gocui.ColorBlack
@@ -230,12 +230,19 @@ func selectAPI(gui *gocui.Gui, view *gocui.View) error {
 //}
 
 func getKeys(gui *gocui.Gui, apiID string) {
-	controller.SelectKeys(credentials, connector, apiID)
+	keys, _, err := controller.SelectKeys(credentials, connector, apiID)
+	if err != nil {
+		panic(err)
+	}
 
 	keyView, _ := gui.View("nodes")
 
-	const outputFormat = "%-6.6s  %-32.32s  %-24.24s  %-32.32s  %-24.24s  %-32.32s  %-100.100s\n"
+	keyView.Clear()
+	const outputFormat = "%-32.32s  %-32.32s  %-24.24s  %-32.32s  %-24.24s  %-32.32s  %-100.100s\n"
 	fmt.Fprintf(keyView, outputFormat, "\x1b[36m", "NAME", "ID", "API-ID", "ORG-ID", "LISTEN-PATH", "TARGET-URL")
+	for _, key := range keys.APIKeys {
+		fmt.Fprintf(keyView, outputFormat, key)
+	}
 
 }
 
