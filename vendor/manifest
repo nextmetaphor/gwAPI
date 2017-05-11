@@ -144,7 +144,7 @@
 			"importpath": "github.com/TykTechnologies/tyk",
 			"repository": "https://github.com/TykTechnologies/tyk",
 			"vcs": "git",
-			"revision": "78429568be1e15d8c842ed2d798b55bd5b57c2e0",
+			"revision": "b3afd4ed9ac06bcec2f6fcd52ef717bf8019ef96",
 			"branch": "HEAD",
 			"notests": true
 		},
