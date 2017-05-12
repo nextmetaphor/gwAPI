@@ -18,7 +18,9 @@ const (
 		" \x1b[36m│ ┬│││\x1b[37m╠═╣╠═╝║ \n" +
 		" \x1b[36m└─┘└┴┘\x1b[37m╩ ╩╩  ╩ "
 
-	apiDetailView = "apiDetails"
+	apiSummaryView     = "apis"
+	apiDetailView      = "apiDetails"
+	sessionSummaryView = "sessions"
 )
 
 var credentials = connection.ConnectionCredentials{
@@ -67,7 +69,7 @@ func layout(g *gocui.Gui) error {
 
 	}
 
-	if v, err := g.SetView("apis", 19, 6, 200, 12); err != nil {
+	if v, err := g.SetView(apiSummaryView, 19, 6, 200, 26); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
@@ -80,13 +82,13 @@ func layout(g *gocui.Gui) error {
 
 	}
 
-	if v, err := g.SetView("nodes", 19, 30, 100, 42); err != nil {
+	if v, err := g.SetView(sessionSummaryView, 19, 28, 52, 42); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
 
 		v.Frame = true
-		v.Title = "keys"
+		v.Title = "sessions"
 		v.Highlight = true
 		v.SelBgColor = gocui.ColorGreen
 		v.SelFgColor = gocui.ColorBlack
@@ -235,11 +237,10 @@ func getKeys(gui *gocui.Gui, apiID string) {
 		panic(err)
 	}
 
-	keyView, _ := gui.View("nodes")
+	keyView, _ := gui.View(sessionSummaryView)
 
 	keyView.Clear()
-	const outputFormat = "%-32.32s  %-32.32s  %-24.24s  %-32.32s  %-24.24s  %-32.32s  %-100.100s\n"
-	fmt.Fprintf(keyView, outputFormat, "\x1b[36m", "NAME", "ID", "API-ID", "ORG-ID", "LISTEN-PATH", "TARGET-URL")
+	const outputFormat = "%-32.32s\n"
 	for _, key := range keys.APIKeys {
 		fmt.Fprintf(keyView, outputFormat, key)
 	}
@@ -281,6 +282,17 @@ func attemptLogin(gui *gocui.Gui, view *gocui.View) error {
 func cancelEditAPI(gui *gocui.Gui, view *gocui.View) error {
 	err := gui.DeleteView(apiDetailView)
 	gui.SetCurrentView("apis")
+
+	return err
+}
+
+func toggleWindows(gui *gocui.Gui, view *gocui.View) error {
+	var err error
+	if view.Name() == apiSummaryView {
+		_, err = gui.SetCurrentView(sessionSummaryView)
+	} else {
+		_, err = gui.SetCurrentView(apiSummaryView)
+	}
 
 	return err
 }
@@ -333,6 +345,10 @@ func keybindings(g *gocui.Gui) error {
 	}
 
 	if err := g.SetKeybinding(apiDetailView, gocui.KeyCtrlS, gocui.ModNone, saveAPI); err != nil {
+		return err
+	}
+
+	if err := g.SetKeybinding("", gocui.KeyTab, gocui.ModNone, toggleWindows); err != nil {
 		return err
 	}
 
