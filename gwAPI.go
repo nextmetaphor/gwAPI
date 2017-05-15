@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/jroimartin/gocui"
@@ -23,11 +24,35 @@ const (
 	sessionSummaryView = "sessions"
 )
 
+type viewDefinition struct {
+	name string
+	x0   int
+	y0   int
+	x1   int
+	y1   int
+}
+
+var viewDefinitions = map[string]viewDefinition{
+	apiSummaryView:     {apiSummaryView, 19, 6, 200, 26},
+	sessionSummaryView: {sessionSummaryView, 19, 28, 52, 42},
+	apiDetailView:      {apiDetailView, 19, 6, 200, 26},
+}
+
 var credentials = connection.ConnectionCredentials{
 	GatewayURL: "http://192.168.64.8:30002",
 	AuthToken:  "ThisInNotTheSecretYouAreLookingFor"}
 
 var connector = connection.Connection{}
+
+func setViewFromDefinition(g *gocui.Gui, viewName string) (*gocui.View, error) {
+	var v *gocui.View
+	definition := viewDefinitions[viewName]
+	if &definition == nil {
+		return v, errors.New("view " + viewName + " does not have a definition.")
+	}
+
+	return g.SetView(definition.name, definition.x0, definition.y0, definition.x0, definition.y1)
+}
 
 func layout(g *gocui.Gui) error {
 	maxX, _ := g.Size()
@@ -52,24 +77,7 @@ func layout(g *gocui.Gui) error {
 		g.SetCurrentView("domain")
 	}
 
-	if v, err := g.SetView("side", 0, 6, 16, 14); err != nil {
-		if err != gocui.ErrUnknownView {
-			return err
-		}
-
-		v.Highlight = true
-		v.SelBgColor = gocui.ColorGreen
-		v.SelFgColor = gocui.ColorBlack
-		v.Frame = true
-		v.Title = "Objects"
-
-		fmt.Fprintln(v, "APIs")
-		fmt.Fprintln(v, "Policies")
-		fmt.Fprintln(v, "Keys")
-
-	}
-
-	if v, err := g.SetView(apiSummaryView, 19, 6, 200, 26); err != nil {
+	if v, err := setViewFromDefinition(g, apiSummaryView); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
