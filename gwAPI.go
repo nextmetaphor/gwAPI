@@ -19,46 +19,52 @@ const (
 		" \x1b[36m│ ┬│││\x1b[37m╠═╣╠═╝║ \n" +
 		" \x1b[36m└─┘└┴┘\x1b[37m╩ ╩╩  ╩ "
 
+	logoView           = "logo"
+	domainView         = "domain"
 	apiSummaryView     = "apis"
 	apiDetailView      = "apiDetails"
 	sessionSummaryView = "sessions"
 )
 
 type viewDefinition struct {
-	name string
-	x0   int
-	y0   int
-	x1   int
-	y1   int
+	name   string
+	left   int
+	top    int
+	width  int
+	height int
 }
 
-var viewDefinitions = map[string]viewDefinition{
-	apiSummaryView:     {apiSummaryView, 19, 6, 200, 26},
-	sessionSummaryView: {sessionSummaryView, 19, 28, 52, 42},
-	apiDetailView:      {apiDetailView, 19, 6, 200, 26},
-}
+var (
+	viewDefinitions = map[string]viewDefinition{
+		logoView:           {logoView, 1, 0, 16, 4},
+		domainView:         {domainView, 19, 1, 100, 2},
+		apiSummaryView:     {apiSummaryView, 1, 5, 200, 20},
+		sessionSummaryView: {sessionSummaryView, 1, 26, 52, 42},
+		apiDetailView:      {apiDetailView, 19, 6, 200, 26},
+	}
 
-var credentials = connection.ConnectionCredentials{
-	GatewayURL: "http://192.168.64.8:30002",
-	AuthToken:  "ThisInNotTheSecretYouAreLookingFor"}
+	credentials = connection.ConnectionCredentials{
+		GatewayURL: "http://192.168.64.8:30002",
+		AuthToken:  "ThisInNotTheSecretYouAreLookingFor"}
 
-var connector = connection.Connection{}
+	connector = connection.Connection{}
+)
 
 func setViewFromDefinition(g *gocui.Gui, viewName string) (*gocui.View, error) {
 	var v *gocui.View
-	definition := viewDefinitions[viewName]
-	if &definition == nil {
+	dfn := viewDefinitions[viewName]
+	if &dfn == nil {
 		return v, errors.New("view " + viewName + " does not have a definition.")
 	}
 
-	return g.SetView(definition.name, definition.x0, definition.y0, definition.x0, definition.y1)
+	return g.SetView(dfn.name, dfn.left, dfn.top, dfn.left+dfn.width, dfn.top+dfn.height)
 }
 
 func layout(g *gocui.Gui) error {
 	maxX, _ := g.Size()
 
 	// create the "logo" view
-	if view, viewErr := g.SetView("logo", 0, 0, 16, 4); viewErr != nil {
+	if view, viewErr := setViewFromDefinition(g, logoView); viewErr != nil {
 		if viewErr != gocui.ErrUnknownView {
 			return viewErr
 		}
@@ -67,7 +73,7 @@ func layout(g *gocui.Gui) error {
 		fmt.Fprintln(view, logo)
 	}
 
-	if v, err := g.SetView("domain", 19, 1, 100, 3); err != nil {
+	if v, err := setViewFromDefinition(g, domainView); err != nil {
 		fmt.Fprintln(v, "http://localhost:8080")
 
 		v.FgColor = gocui.ColorCyan
@@ -90,7 +96,7 @@ func layout(g *gocui.Gui) error {
 
 	}
 
-	if v, err := g.SetView(sessionSummaryView, 19, 28, 52, 42); err != nil {
+	if v, err := setViewFromDefinition(g, sessionSummaryView); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
